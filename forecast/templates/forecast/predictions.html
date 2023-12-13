@@ -1,0 +1,136 @@
+<!-- forecast/templates/forecast/predictions.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Predictions</title>
+    <!-- Include necessary libraries -->
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+    <div id="header">
+        <h1>Crypto Price Predictions</h1>
+    </div>
+
+    <div id="predictionForm">
+        <label for="predictionDaysInput">Predict Prices for the Next:</label>
+        <input type="number" id="predictionDaysInput" name="predictionDaysInput" min="1" value="7">
+        <button id="submitButton" onclick="updatePrediction()">Submit</button>
+    </div>
+
+    <div id="cryptoChartContainer">
+        <canvas id="cryptoChart" width="400" height="400"></canvas>
+    </div>
+
+    <script>
+        function updateChart(labels, historicalData, predictions) {
+            // if chart has not been created yet, create it, otherwise update it
+            var ctx = document.getElementById('cryptoChart').getContext('2d');
+            var existingChart = Chart.getChart(ctx);
+            if (existingChart) {
+                existingChart.destroy();
+            }
+            var cryptoChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                            label: 'Historical Data',
+                            data: historicalData,
+                            borderColor: 'blue',
+                            backgroundColor: 'rgba(0, 0, 255, 0.1)',
+                        },
+                        {
+                            label: 'Predictions',
+                            data: predictions,
+                            borderColor: 'red',
+                            backgroundColor: 'rgba(255, 0, 0, 0.1)',
+                        }
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    stacked: false,
+                    title: {
+                        display: true,
+                        text: 'Crypto Price Predictions',
+                        fontSize: 16,
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date',
+                                fontSize: 14,
+                            },
+
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Price',
+                                fontSize: 14,
+                            },
+                        },
+                    },
+                    tooltips: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    hover: {
+                        mode: 'nearest',
+                        intersect: true,
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            fontSize: 12,
+                        }
+                    },
+                },
+            });
+        }
+
+        function fetchData(predictionDays) {
+            $.ajax({
+                url: '{% url "get_prediction" %}',
+                type: 'GET',
+                data: {
+                    prediction_days: predictionDays
+                },
+                success: function (data) {
+                    updateChart(data.labels, data.historical_data, data.predictions);
+                },
+                error: function (xhr, textStatus, errorThrown) {
+                    console.log('Error fetching data:', textStatus, errorThrown);
+                }
+            });
+        }
+
+        function updatePrediction() {
+            var predictionDays = document.getElementById("predictionDaysInput").value;
+            fetchData(predictionDays);
+        }
+
+        fetchData(7); // Initial fetch with default 7 days
+        setInterval(function () {
+            fetchData(document.getElementById("predictionDaysInput").value);
+        }, 60000); // Update every minute, adjust as needed
+    </script>
+
+</body>
+
+</html>
